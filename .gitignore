@@ -1,0 +1,17 @@
+# Flutter
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android
+android/.gradle
+android/local.properties
+
+# Python
+venv/
+__pycache__/
+
+# OS
+.DS_Store
+Thumbs.db

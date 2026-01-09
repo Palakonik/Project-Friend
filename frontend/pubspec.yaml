@@ -1,0 +1,38 @@
+name: frontend
+description: "Arkadaşlık Uygulaması - Flutter Frontend"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  
+  # HTTP ve API
+  http: ^1.2.0
+  
+  # Google Sign-In
+  google_sign_in: ^6.2.0
+  
+  # State Management
+  provider: ^6.1.0
+  
+  # Ekran yönlendirme
+  go_router: ^14.6.0
+  
+  # Shared Preferences (token saklama)
+  shared_preferences: ^2.3.0
+  
+  # Resim önbelleği
+  cached_network_image: ^3.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
