@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'services/auth_provider.dart';
 import 'screens/login_screen.dart';
@@ -7,8 +8,12 @@ import 'screens/home_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/admin_panel_screen.dart';
 import 'screens/blocked_users_screen.dart';
+import 'screens/registration_screen.dart';
+import 'screens/email_verification_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -34,7 +39,7 @@ class MyApp extends StatelessWidget {
             centerTitle: true,
             elevation: 0,
           ),
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             elevation: 2,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -60,6 +65,8 @@ class MyApp extends StatelessWidget {
           '/search': (context) => const SearchScreen(),
           '/admin': (context) => const AdminPanelScreen(),
           '/blocked': (context) => const BlockedUsersScreen(),
+          '/register': (context) => const RegistrationScreen(),
+          '/verify-email': (context) => const EmailVerificationScreen(),
         },
       ),
     );

@@ -2,23 +2,232 @@ from rest_framework import generics, status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Q
 from django.conf import settings
-from google.oauth2 import id_token
-from google.auth.transport import requests
 
 from .models import CustomUser
-from .serializers import UserSerializer, UserSearchSerializer, GoogleAuthSerializer
+from .serializers import (
+    UserSerializer, UserSearchSerializer, GoogleAuthSerializer,
+    FirebaseAuthSerializer, FirebaseRegisterSerializer
+)
+
+# Firebase Admin SDK - opsiyonel import
+try:
+    import firebase_admin
+    from firebase_admin import auth as firebase_auth, credentials
+    
+    # Firebase Admin SDK'yı başlat (henüz başlatılmamışsa)
+    if not firebase_admin._apps:
+        # serviceAccountKey.json dosyasının yolu
+        import os
+        cred_path = os.path.join(settings.BASE_DIR, 'serviceAccountKey.json')
+        if os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+            FIREBASE_ENABLED = True
+        else:
+            FIREBASE_ENABLED = False
+            print("Warning: serviceAccountKey.json not found. Firebase authentication disabled.")
+    else:
+        FIREBASE_ENABLED = True
+except ImportError:
+    FIREBASE_ENABLED = False
+    print("Warning: firebase-admin not installed. Firebase authentication disabled.")
+
+# Google OAuth (geriye uyumluluk için)
+try:
+    from google.oauth2 import id_token
+    from google.auth.transport import requests
+    GOOGLE_AUTH_ENABLED = True
+except ImportError:
+    GOOGLE_AUTH_ENABLED = False
+
+
+class FirebaseLoginView(APIView):
+    """
+    Firebase token ile giriş yapma endpoint'i.
+    Firebase ID token doğrulayıp kullanıcı oluşturur veya mevcut kullanıcıyı döndürür.
+    """
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        if not FIREBASE_ENABLED:
+            return Response({
+                'error': 'Firebase authentication disabled',
+                'detail': 'Firebase Admin SDK not configured'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        serializer = FirebaseAuthSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        token = serializer.validated_data['firebase_token']
+        
+        try:
+            # Firebase ID token doğrulama
+            decoded_token = firebase_auth.verify_id_token(token)
+            
+            uid = decoded_token['uid']
+            email = decoded_token.get('email', '')
+            name = decoded_token.get('name', '')
+            picture = decoded_token.get('picture', '')
+            email_verified = decoded_token.get('email_verified', False)
+            
+            # İsmi parçala
+            name_parts = name.split(' ', 1) if name else ['', '']
+            first_name = name_parts[0]
+            last_name = name_parts[1] if len(name_parts) > 1 else ''
+            
+            # Kullanıcı var mı kontrol et (firebase_uid veya email ile)
+            user = CustomUser.objects.filter(
+                Q(firebase_uid=uid) | Q(email=email)
+            ).first()
+            
+            if user:
+                # Mevcut kullanıcıyı güncelle
+                user.firebase_uid = uid
+                user.is_email_verified = email_verified
+                if picture:
+                    user.profile_photo = picture
+                if first_name and not user.first_name:
+                    user.first_name = first_name
+                if last_name and not user.last_name:
+                    user.last_name = last_name
+                user.save()
+                created = False
+            else:
+                # Yeni kullanıcı oluştur
+                username = email.split('@')[0] if email else f'user_{uid[:8]}'
+                # Username benzersiz olmalı
+                base_username = username
+                counter = 1
+                while CustomUser.objects.filter(username=username).exists():
+                    username = f"{base_username}{counter}"
+                    counter += 1
+                
+                user = CustomUser.objects.create(
+                    firebase_uid=uid,
+                    username=username,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    profile_photo=picture,
+                    is_email_verified=email_verified,
+                )
+                created = True
+            
+            # Session oluştur
+            from django.contrib.auth import login
+            login(request, user)
+            
+            return Response({
+                'user': UserSerializer(user).data,
+                'is_new_user': created,
+                'message': 'Giriş başarılı'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'error': 'Geçersiz token',
+                'detail': str(e)
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class FirebaseRegisterView(APIView):
+    """
+    Firebase ile kayıt endpoint'i.
+    Profil fotoğrafı yükleme destekler.
+    """
+    permission_classes = [permissions.AllowAny]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def post(self, request):
+        if not FIREBASE_ENABLED:
+            return Response({
+                'error': 'Firebase authentication disabled',
+                'detail': 'Firebase Admin SDK not configured'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        firebase_token = request.data.get('firebase_token')
+        first_name = request.data.get('first_name', '')
+        last_name = request.data.get('last_name', '')
+        profile_photo = request.FILES.get('profile_photo')
+        
+        if not firebase_token:
+            return Response({
+                'error': 'firebase_token gerekli'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Firebase ID token doğrulama
+            decoded_token = firebase_auth.verify_id_token(firebase_token)
+            
+            uid = decoded_token['uid']
+            email = decoded_token.get('email', '')
+            
+            # Kullanıcı var mı kontrol et
+            user = CustomUser.objects.filter(firebase_uid=uid).first()
+            
+            if user:
+                # Mevcut kullanıcıyı güncelle
+                user.first_name = first_name
+                user.last_name = last_name
+                if profile_photo:
+                    user.profile_photo_file = profile_photo
+                user.save()
+                created = False
+            else:
+                # Yeni kullanıcı oluştur
+                username = email.split('@')[0] if email else f'user_{uid[:8]}'
+                base_username = username
+                counter = 1
+                while CustomUser.objects.filter(username=username).exists():
+                    username = f"{base_username}{counter}"
+                    counter += 1
+                
+                user = CustomUser.objects.create(
+                    firebase_uid=uid,
+                    username=username,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                )
+                if profile_photo:
+                    user.profile_photo_file = profile_photo
+                    user.save()
+                created = True
+            
+            # Session oluştur
+            from django.contrib.auth import login
+            login(request, user)
+            
+            return Response({
+                'user': UserSerializer(user).data,
+                'is_new_user': created,
+                'message': 'Kayıt başarılı'
+            }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'error': 'Kayıt hatası',
+                'detail': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class GoogleLoginView(APIView):
     """
-    Google ile giriş yapma endpoint'i.
+    Google ile giriş yapma endpoint'i (geriye uyumluluk).
     Google ID token doğrulayıp kullanıcı oluşturur veya mevcut kullanıcıyı döndürür.
     """
     permission_classes = [permissions.AllowAny]
     
     def post(self, request):
+        if not GOOGLE_AUTH_ENABLED:
+            return Response({
+                'error': 'Google authentication disabled',
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
         serializer = GoogleAuthSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

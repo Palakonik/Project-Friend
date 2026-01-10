@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
@@ -34,7 +35,75 @@ class ApiService {
     return h;
   }
 
-  /// Google login
+  /// Firebase token ile giriş
+  Future<User?> firebaseLogin(String firebaseToken) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/firebase-login/'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'firebase_token': firebaseToken}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      // Session cookie'yi kaydet
+      final cookies = response.headers['set-cookie'];
+      if (cookies != null) {
+        final sessionMatch = RegExp(r'sessionid=([^;]+)').firstMatch(cookies);
+        if (sessionMatch != null) {
+          await saveSession(sessionMatch.group(1)!);
+        }
+      }
+      return User.fromJson(data['user']);
+    }
+    return null;
+  }
+
+  /// Firebase ile kayıt (profil fotoğrafı destekli)
+  Future<User?> registerWithFirebase({
+    required String firebaseToken,
+    required String firstName,
+    required String lastName,
+    File? profilePhoto,
+  }) async {
+    // Multipart request oluştur
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/users/firebase-register/'),
+    );
+
+    request.fields['firebase_token'] = firebaseToken;
+    request.fields['first_name'] = firstName;
+    request.fields['last_name'] = lastName;
+
+    if (profilePhoto != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'profile_photo',
+          profilePhoto.path,
+        ),
+      );
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+      // Session cookie'yi kaydet
+      final cookies = response.headers['set-cookie'];
+      if (cookies != null) {
+        final sessionMatch = RegExp(r'sessionid=([^;]+)').firstMatch(cookies);
+        if (sessionMatch != null) {
+          await saveSession(sessionMatch.group(1)!);
+        }
+      }
+      return User.fromJson(data['user']);
+    }
+    return null;
+  }
+
+  /// Eski Google login (geriye uyumluluk için, artık kullanılmıyor)
+  @deprecated
   Future<User?> googleLogin(String idToken) async {
     final response = await http.post(
       Uri.parse('$baseUrl/users/google-login/'),
@@ -44,7 +113,6 @@ class ApiService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      // Session cookie'yi kaydet
       final cookies = response.headers['set-cookie'];
       if (cookies != null) {
         final sessionMatch = RegExp(r'sessionid=([^;]+)').firstMatch(cookies);

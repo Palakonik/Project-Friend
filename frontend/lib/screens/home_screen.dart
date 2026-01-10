@@ -51,13 +51,19 @@ class _HomeScreenState extends State<HomeScreen> {
           if (auth.isAdmin)
             IconButton(
               icon: const Icon(Icons.admin_panel_settings),
-              onPressed: () => Navigator.pushNamed(context, '/admin'),
+              onPressed: () async {
+                await Navigator.pushNamed(context, '/admin');
+                _loadFriends(); // Admin panelinden dönünce listeyi yenile
+              },
               tooltip: 'Admin Paneli',
             ),
           // Engellenmiş kullanıcılar
           IconButton(
             icon: const Icon(Icons.block),
-            onPressed: () => Navigator.pushNamed(context, '/blocked'),
+            onPressed: () async {
+              await Navigator.pushNamed(context, '/blocked');
+              _loadFriends(); // Engel ekranından dönünce listeyi yenile
+            },
             tooltip: 'Engellenmiş Kullanıcılar',
           ),
           // Profil menüsü

@@ -29,7 +29,7 @@ class User {
       email: json['email'] ?? '',
       firstName: json['first_name'] ?? '',
       lastName: json['last_name'] ?? '',
-      profilePhoto: json['profile_photo'],
+      profilePhoto: json['profile_photo_url'] ?? json['profile_photo'],
       isAdminUser: json['is_admin_user'] ?? false,
     );
   }

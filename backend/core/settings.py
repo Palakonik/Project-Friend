@@ -106,7 +106,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
+        'core.authentication.CsrfExemptSessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -116,6 +116,13 @@ REST_FRAMEWORK = {
 # CORS settings - Flutter uygulaması için
 CORS_ALLOW_ALL_ORIGINS = True  # Development için, production'da değiştirin
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF settings - Mobile uygulamalar için
+CSRF_TRUSTED_ORIGINS = ['http://10.0.2.2:8000', 'http://localhost:8000', 'http://127.0.0.1:8000']
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = False  # Development için False, production'da True
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = False  # Development için False, production'da True
 
 # Google OAuth settings
 GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'  # Google Cloud Console'dan alınacak
