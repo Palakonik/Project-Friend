@@ -154,7 +154,9 @@ class ApiService {
   }
 
   /// Arkadaşlık isteği gönder
-  Future<bool> sendFriendRequest(int receiverId, String note) async {
+  Future<Map<String, dynamic>> sendFriendRequest(int receiverId, String note) async {
+    await loadSession(); // Session'ın yüklü olduğundan emin ol
+    
     final response = await http.post(
       Uri.parse('$baseUrl/friends/send-request/'),
       headers: headers,
@@ -164,7 +166,17 @@ class ApiService {
       }),
     );
 
-    return response.statusCode == 201;
+    if (response.statusCode == 201) {
+      return {'success': true, 'message': 'Arkadaşlık isteği gönderildi! Admin onayı bekleniyor.'};
+    } else {
+      // Hata mesajını parse et
+      try {
+        final data = jsonDecode(response.body);
+        return {'success': false, 'message': data['error'] ?? 'İstek gönderilemedi (${response.statusCode})'};
+      } catch (e) {
+        return {'success': false, 'message': 'İstek gönderilemedi (${response.statusCode})'};
+      }
+    }
   }
 
   /// Arkadaş listesi

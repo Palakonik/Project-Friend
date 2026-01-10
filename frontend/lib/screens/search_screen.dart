@@ -221,7 +221,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     
     try {
-      final success = await auth.apiService.sendFriendRequest(
+      final result = await auth.apiService.sendFriendRequest(
         user.id,
         _noteController.text,
       );
@@ -229,20 +229,16 @@ class _SearchScreenState extends State<SearchScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              success
-                  ? 'Arkadaşlık isteği gönderildi! Admin onayı bekleniyor.'
-                  : 'İstek gönderilemedi',
-            ),
-            backgroundColor: success ? Colors.green : Colors.red,
+            content: Text(result['message'] ?? 'İşlem tamamlandı'),
+            backgroundColor: result['success'] == true ? Colors.green : Colors.red,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Bir hata oluştu'),
+          SnackBar(
+            content: Text('Bağlantı hatası: $e'),
             backgroundColor: Colors.red,
           ),
         );
