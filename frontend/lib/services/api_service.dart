@@ -6,7 +6,7 @@ import '../models/models.dart';
 
 /// API Servisi - Django backend ile iletişim
 class ApiService {
-  static const String baseUrl = 'http://10.0.2.2:8000/api'; // Android emulator için
+  static const String baseUrl = 'https://friend-app-backend.onrender.com';
   // static const String baseUrl = 'http://localhost:8000/api'; // iOS/Web için
   
   String? _sessionId;
@@ -38,7 +38,7 @@ class ApiService {
   /// Firebase token ile giriş
   Future<User?> firebaseLogin(String firebaseToken) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/users/firebase-login/'),
+      Uri.parse('$baseUrl/api/users/firebase-login/'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'firebase_token': firebaseToken}),
     );
