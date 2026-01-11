@@ -24,69 +24,95 @@ class SendFriendRequestView(APIView):
     """Arkadaşlık isteği gönderme"""
     
     def post(self, request):
-        receiver_id = request.data.get('receiver_id')
-        note = request.data.get('note', '')
-        
-        # Alıcı kontrol
+        import traceback
         try:
-            receiver = CustomUser.objects.get(id=receiver_id)
-        except CustomUser.DoesNotExist:
-            return Response(
-                {'error': 'Kullanıcı bulunamadı'},
-                status=status.HTTP_404_NOT_FOUND
+            receiver_id = request.data.get('receiver_id')
+            note = request.data.get('note', '')
+            
+            print(f"DEBUG: receiver_id={receiver_id}, note={note}, user={request.user}")
+            
+            # Alıcı kontrol
+            try:
+                receiver = CustomUser.objects.get(id=receiver_id)
+            except CustomUser.DoesNotExist:
+                return Response(
+                    {'error': 'Kullanıcı bulunamadı'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Kendine istek gönderemez
+            if receiver == request.user:
+                return Response(
+                    {'error': 'Kendinize arkadaşlık isteği gönderemezsiniz'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Engelleme kontrolü
+            if BlockedUser.objects.filter(
+                Q(blocker=request.user, blocked=receiver) |
+                Q(blocker=receiver, blocked=request.user)
+            ).exists():
+                return Response(
+                    {'error': 'Bu kullanıcıyla işlem yapılamaz'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Zaten arkadaş mı kontrolü
+            if Friendship.objects.filter(
+                Q(user1=request.user, user2=receiver) |
+                Q(user1=receiver, user2=request.user)
+            ).exists():
+                return Response(
+                    {'error': 'Bu kullanıcı zaten arkadaşınız'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Mevcut istek kontrolü (tüm durumlar için)
+            existing = FriendRequest.objects.filter(
+                sender=request.user, 
+                receiver=receiver
+            ).first()
+            
+            if existing:
+                if existing.status == 'pending':
+                    return Response(
+                        {'error': 'Bu kullanıcıya zaten bekleyen bir isteğiniz var'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                elif existing.status == 'approved':
+                    return Response(
+                        {'error': 'Bu kullanıcı zaten arkadaşınız'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                elif existing.status == 'rejected':
+                    # Reddedilmiş isteği yeniden gönder (güncelle)
+                    existing.status = 'pending'
+                    existing.note = note
+                    existing.save()
+                    return Response({
+                        'message': 'Arkadaşlık isteği tekrar gönderildi. Admin onayına sunuldu.',
+                        'request': FriendRequestSerializer(existing).data
+                    }, status=status.HTTP_201_CREATED)
+            
+            # Yeni istek oluştur
+            friend_request = FriendRequest.objects.create(
+                sender=request.user,
+                receiver=receiver,
+                note=note
             )
+            
+            return Response({
+                'message': 'Arkadaşlık isteği gönderildi. Admin onayına sunuldu.',
+                'request': FriendRequestSerializer(friend_request).data
+            }, status=status.HTTP_201_CREATED)
         
-        # Kendine istek gönderemez
-        if receiver == request.user:
+        except Exception as e:
+            print(f"ERROR in SendFriendRequestView: {str(e)}")
+            print(traceback.format_exc())
             return Response(
-                {'error': 'Kendinize arkadaşlık isteği gönderemezsiniz'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'error': f'Sunucu hatası: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
-        # Engelleme kontrolü
-        if BlockedUser.objects.filter(
-            Q(blocker=request.user, blocked=receiver) |
-            Q(blocker=receiver, blocked=request.user)
-        ).exists():
-            return Response(
-                {'error': 'Bu kullanıcıyla işlem yapılamaz'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        # Zaten arkadaş mı kontrolü
-        if Friendship.objects.filter(
-            Q(user1=request.user, user2=receiver) |
-            Q(user1=receiver, user2=request.user)
-        ).exists():
-            return Response(
-                {'error': 'Bu kullanıcı zaten arkadaşınız'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Mevcut bekleyen istek kontrolü
-        existing = FriendRequest.objects.filter(
-            sender=request.user, 
-            receiver=receiver,
-            status='pending'
-        ).first()
-        
-        if existing:
-            return Response(
-                {'error': 'Bu kullanıcıya zaten bekleyen bir isteğiniz var'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # İstek oluştur
-        friend_request = FriendRequest.objects.create(
-            sender=request.user,
-            receiver=receiver,
-            note=note
-        )
-        
-        return Response({
-            'message': 'Arkadaşlık isteği gönderildi. Admin onayına sunuldu.',
-            'request': FriendRequestSerializer(friend_request).data
-        }, status=status.HTTP_201_CREATED)
 
 
 class MyFriendsView(generics.ListAPIView):
@@ -187,6 +213,12 @@ class BlockUserView(APIView):
         Friendship.objects.filter(
             Q(user1=request.user, user2=blocked_user) |
             Q(user1=blocked_user, user2=request.user)
+        ).delete()
+        
+        # Arkadaşlık isteklerini de sil (her iki yönde)
+        FriendRequest.objects.filter(
+            Q(sender=request.user, receiver=blocked_user) |
+            Q(sender=blocked_user, receiver=request.user)
         ).delete()
         
         # Engelle

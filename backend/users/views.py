@@ -318,3 +318,64 @@ class LogoutView(APIView):
         from django.contrib.auth import logout
         logout(request)
         return Response({'message': 'Çıkış yapıldı'}, status=status.HTTP_200_OK)
+
+
+class IsAdminUser(permissions.BasePermission):
+    """Admin kullanıcı kontrolü"""
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.is_admin_user
+
+
+class AllUsersView(APIView):
+    """Tüm kullanıcıları listele (sadece admin görebilir)"""
+    permission_classes = [IsAdminUser]
+    
+    def get(self, request):
+        users = CustomUser.objects.all().order_by('-date_joined')
+        data = []
+        for user in users:
+            data.append({
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'full_name': f"{user.first_name} {user.last_name}".strip(),
+                'profile_photo': user.profile_photo if user.profile_photo else None,
+                'is_admin_user': user.is_admin_user,
+                'date_joined': user.date_joined.isoformat(),
+            })
+        return Response(data)
+
+
+class ToggleAdminView(APIView):
+    """Kullanıcıya admin yetkisi ver/kaldır (sadece admin yapabilir)"""
+    permission_classes = [IsAdminUser]
+    
+    def post(self, request, user_id):
+        try:
+            target_user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {'error': 'Kullanıcı bulunamadı'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Kendini değiştiremez
+        if target_user == request.user:
+            return Response(
+                {'error': 'Kendi admin yetkinizi değiştiremezsiniz'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Admin durumunu tersine çevir
+        target_user.is_admin_user = not target_user.is_admin_user
+        target_user.save()
+        
+        action = 'verildi' if target_user.is_admin_user else 'kaldırıldı'
+        
+        return Response({
+            'message': f'{target_user.first_name} {target_user.last_name} için admin yetkisi {action}',
+            'user_id': target_user.id,
+            'is_admin_user': target_user.is_admin_user,
+        })
+

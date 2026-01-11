@@ -4,7 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/auth_provider.dart';
 import '../models/models.dart';
 
-/// Admin Panel - Bekleyen arkadaşlık isteklerini onaylama/reddetme
+/// Admin Panel - Bekleyen arkadaşlık isteklerini onaylama/reddetme ve kullanıcı yönetimi
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
 
@@ -12,18 +12,29 @@ class AdminPanelScreen extends StatefulWidget {
   State<AdminPanelScreen> createState() => _AdminPanelScreenState();
 }
 
-class _AdminPanelScreenState extends State<AdminPanelScreen> {
+class _AdminPanelScreenState extends State<AdminPanelScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   List<FriendRequest> _pendingRequests = [];
-  bool _isLoading = true;
+  List<Map<String, dynamic>> _allUsers = [];
+  bool _isLoadingRequests = true;
+  bool _isLoadingUsers = true;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadPendingRequests();
+    _loadAllUsers();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPendingRequests() async {
-    setState(() => _isLoading = true);
+    setState(() => _isLoadingRequests = true);
     
     final auth = Provider.of<AuthProvider>(context, listen: false);
     try {
@@ -32,7 +43,20 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       // Handle error
     }
     
-    setState(() => _isLoading = false);
+    setState(() => _isLoadingRequests = false);
+  }
+
+  Future<void> _loadAllUsers() async {
+    setState(() => _isLoadingUsers = true);
+    
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    try {
+      _allUsers = await auth.apiService.getAllUsers();
+    } catch (e) {
+      // Handle error
+    }
+    
+    setState(() => _isLoadingUsers = false);
   }
 
   @override
@@ -43,19 +67,44 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         backgroundColor: const Color(0xFF764ba2),
         foregroundColor: Colors.white,
         elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          tabs: const [
+            Tab(icon: Icon(Icons.pending_actions), text: 'İstekler'),
+            Tab(icon: Icon(Icons.people), text: 'Kullanıcılar'),
+          ],
+        ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadPendingRequests,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _pendingRequests.isEmpty
-                ? _buildEmptyState()
-                : _buildRequestsList(),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // İstekler sekmesi
+          RefreshIndicator(
+            onRefresh: _loadPendingRequests,
+            child: _isLoadingRequests
+                ? const Center(child: CircularProgressIndicator())
+                : _pendingRequests.isEmpty
+                    ? _buildEmptyRequestsState()
+                    : _buildRequestsList(),
+          ),
+          // Kullanıcılar sekmesi
+          RefreshIndicator(
+            onRefresh: _loadAllUsers,
+            child: _isLoadingUsers
+                ? const Center(child: CircularProgressIndicator())
+                : _allUsers.isEmpty
+                    ? _buildEmptyUsersState()
+                    : _buildUsersList(),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyRequestsState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -313,4 +362,163 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   String _formatDate(DateTime date) {
     return '${date.day}.${date.month}.${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
+
+  Widget _buildEmptyUsersState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.people_outline,
+            size: 80,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Kullanıcı bulunamadı',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUsersList() {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserId = auth.currentUser?.id;
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _allUsers.length,
+      itemBuilder: (context, index) {
+        final user = _allUsers[index];
+        final isAdmin = user['is_admin_user'] == true;
+        final isCurrentUser = user['id'] == currentUserId;
+        
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: CircleAvatar(
+              radius: 24,
+              backgroundColor: isAdmin ? const Color(0xFF764ba2) : Colors.grey[300],
+              backgroundImage: user['profile_photo'] != null
+                  ? CachedNetworkImageProvider(user['profile_photo'])
+                  : null,
+              child: user['profile_photo'] == null
+                  ? Text(
+                      (user['full_name'] ?? '?')[0].toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: isAdmin ? Colors.white : Colors.grey[700],
+                      ),
+                    )
+                  : null,
+            ),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    user['full_name'] ?? 'Bilinmeyen',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                if (isAdmin)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF764ba2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Admin',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(user['email'] ?? ''),
+                if (isCurrentUser)
+                  const Text(
+                    '(Siz)',
+                    style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w500),
+                  ),
+              ],
+            ),
+            trailing: isCurrentUser
+                ? null
+                : Switch(
+                    value: isAdmin,
+                    activeColor: const Color(0xFF764ba2),
+                    onChanged: (value) => _toggleAdmin(user),
+                  ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _toggleAdmin(Map<String, dynamic> user) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(user['is_admin_user'] == true ? 'Admin Yetkisini Kaldır' : 'Admin Yetkisi Ver'),
+        content: Text(
+          user['is_admin_user'] == true
+              ? '${user['full_name']} kullanıcısının admin yetkisini kaldırmak istiyor musunuz?'
+              : '${user['full_name']} kullanıcısına admin yetkisi vermek istiyor musunuz?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: user['is_admin_user'] == true ? Colors.red : const Color(0xFF764ba2),
+            ),
+            child: Text(user['is_admin_user'] == true ? 'Kaldır' : 'Ver'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final result = await auth.apiService.toggleAdminStatus(user['id']);
+      
+      if (result['error'] == null) {
+        _loadAllUsers();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'İşlem başarılı'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['error']),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
 }
+

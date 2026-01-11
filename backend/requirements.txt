@@ -5,3 +5,4 @@ google-auth>=2.41
 google-auth-oauthlib>=1.2
 Pillow>=12.1
 firebase-admin>=6.4
+psycopg2-binary>=2.9

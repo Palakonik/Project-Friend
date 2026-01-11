@@ -35,6 +35,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -62,13 +63,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Database - SQLite
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# Database - PostgreSQL (database/config.py'dan import)
+from database.config import DATABASES
 
 # Custom User Model
 AUTH_USER_MODEL = 'users.CustomUser'
@@ -97,6 +93,8 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -120,9 +118,9 @@ CORS_ALLOW_CREDENTIALS = True
 # CSRF settings - Mobile uygulamalar için
 CSRF_TRUSTED_ORIGINS = ['http://10.0.2.2:8000', 'http://localhost:8000', 'http://127.0.0.1:8000']
 CSRF_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SECURE = False  # Development için False, production'da True
+CSRF_COOKIE_SECURE = True  # Development için False, production'da True
 SESSION_COOKIE_SAMESITE = 'None'
-SESSION_COOKIE_SECURE = False  # Development için False, production'da True
+SESSION_COOKIE_SECURE = True  # Development için False, production'da True
 
 # Google OAuth settings
 GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'  # Google Cloud Console'dan alınacak

@@ -268,4 +268,33 @@ class ApiService {
     await prefs.remove('sessionid');
     _sessionId = null;
   }
+
+  /// Tüm kullanıcıları getir (Admin)
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    await loadSession();
+    final response = await http.get(
+      Uri.parse('$baseUrl/users/admin/all/'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.cast<Map<String, dynamic>>();
+    }
+    return [];
+  }
+
+  /// Admin yetkisi ver/kaldır
+  Future<Map<String, dynamic>> toggleAdminStatus(int userId) async {
+    await loadSession();
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/admin/toggle-admin/$userId/'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return {'error': 'İşlem başarısız'};
+  }
 }
