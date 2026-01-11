@@ -1,33 +1,41 @@
 {
   "project_info": {
-    "project_number": "115195099852",
-    "project_id": "projectfriend-61c3c",
-    "storage_bucket": "projectfriend-61c3c.firebasestorage.app"
+    "project_number": "721048601246",
+    "project_id": "friend-8b8ef",
+    "storage_bucket": "friend-8b8ef.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:115195099852:android:87545dc6e9ca1af8352069",
+        "mobilesdk_app_id": "1:721048601246:android:a8eb81b1ede10bb1f6318f",
         "android_client_info": {
           "package_name": "com.friendapp.frontend"
         }
       },
       "oauth_client": [
         {
-          "client_id": "115195099852-bc87cac8hk3m72eon8hu21n65taki6o8.apps.googleusercontent.com",
+          "client_id": "721048601246-kslchfa71p3h7s387pj9q2iou39gi93t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.friendapp.frontend",
+            "certificate_hash": "06f928bb781e8c3fdd9b7e42619b5c55399de30c"
+          }
+        },
+        {
+          "client_id": "721048601246-a7ffflvgvq2aqeeliufgn1qhsje5ago0.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBLatEUeuDvXeZ7hJw-4KhHLlxyDHPHNig"
+          "current_key": "AIzaSyDSnUxtmia1w_AAC5q0d6nNR2smVcL9c8k"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "115195099852-bc87cac8hk3m72eon8hu21n65taki6o8.apps.googleusercontent.com",
+              "client_id": "721048601246-a7ffflvgvq2aqeeliufgn1qhsje5ago0.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

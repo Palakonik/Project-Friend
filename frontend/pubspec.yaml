@@ -21,6 +21,9 @@ dependencies:
   # Google Sign-In
   google_sign_in: ^6.2.0
   
+  # Supabase - PostgreSQL + Realtime Chat
+  supabase_flutter: ^2.5.0
+  
   # Image Picker (profil fotoğrafı için)
   image_picker: ^1.1.2
   
@@ -35,6 +38,11 @@ dependencies:
   
   # Resim önbelleği
   cached_network_image: ^3.4.0
+  
+  # Utilities
+  timeago: ^3.7.0
+  intl: ^0.19.0
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:

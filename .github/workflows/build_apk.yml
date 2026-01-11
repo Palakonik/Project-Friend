@@ -1,0 +1,81 @@
+name: Build and Release APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Manuel tetikleme
+
+jobs:
+  build:
+    name: Build Flutter APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'  # En son stable sürüm
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Get dependencies
+        working-directory: ./frontend
+        run: flutter pub get
+
+      - name: 🔧 Build APK
+        working-directory: ./frontend
+        run: flutter build apk --release
+
+      - name: 📋 Get version info
+        id: version
+        working-directory: ./frontend
+        run: |
+          echo "version=$(grep 'version:' pubspec.yaml | sed 's/version: //')" >> $GITHUB_OUTPUT
+          echo "date=$(date +'%Y-%m-%d_%H-%M')" >> $GITHUB_OUTPUT
+
+      - name: 📤 Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-${{ steps.version.outputs.version }}-${{ steps.version.outputs.date }}
+          path: frontend/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: 🏷️ Create Release
+        uses: softprops/action-gh-release@v1
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: v${{ steps.version.outputs.version }}-${{ github.run_number }}
+          name: Release v${{ steps.version.outputs.version }} Build ${{ github.run_number }}
+          body: |
+            🚀 **Otomatik APK Build**
+            
+            📱 **Sürüm:** ${{ steps.version.outputs.version }}
+            📅 **Tarih:** ${{ steps.version.outputs.date }}
+            🔨 **Build:** #${{ github.run_number }}
+            
+            ### 📥 İndirme
+            APK dosyasını aşağıdan indirebilirsiniz.
+            
+            ### 🔄 Değişiklikler
+            ${{ github.event.head_commit.message }}
+          files: frontend/build/app/outputs/flutter-apk/app-release.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ✅ Build Success
+        run: |
+          echo "✅ APK başarıyla oluşturuldu!"
+          echo "📦 Artifact olarak yüklendi"
+          echo "🔗 Release oluşturuldu"

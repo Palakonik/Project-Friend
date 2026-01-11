@@ -26,13 +26,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _signInWithEmail() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final success = await auth.signInWithEmail(
       _emailController.text.trim(),
       _passwordController.text,
     );
-    
+
     if (success && mounted) {
       // E-posta doğrulanmış mı kontrol et
       if (auth.isEmailVerified) {
@@ -51,10 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF667eea),
-              Color(0xFF764ba2),
-            ],
+            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
           ),
         ),
         child: SafeArea(
@@ -78,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Başlık
                   const Text(
                     'Arkadaşlık',
@@ -103,22 +100,87 @@ class _LoginScreenState extends State<LoginScreen> {
                   Consumer<AuthProvider>(
                     builder: (context, auth, _) {
                       if (auth.isLoading) {
-                        return const CircularProgressIndicator(
-                          color: Colors.white,
+                        return Column(
+                          children: [
+                            const CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Giriş yapılıyor...',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
                         );
                       }
 
                       return Column(
                         children: [
+                          // Hata mesajı göster
+                          if (auth.error != null) ...[
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              margin: const EdgeInsets.only(bottom: 20),
+                              decoration: BoxDecoration(
+                                color: Colors.red[400],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      auth.error!,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
                           // Google ile Giriş Butonu
                           if (!_showEmailLogin) ...[
                             ElevatedButton(
-                              onPressed: () async {
-                                final success = await auth.signInWithGoogle();
-                                if (success && context.mounted) {
-                                  Navigator.pushReplacementNamed(context, '/home');
-                                }
-                              },
+                              onPressed: auth.isLoading
+                                  ? null
+                                  : () async {
+                                      final success = await auth
+                                          .signInWithGoogle();
+                                      if (!mounted) return;
+
+                                      if (success) {
+                                        Navigator.pushReplacementNamed(
+                                          context,
+                                          '/home',
+                                        );
+                                      } else {
+                                        // Hata mesajı zaten auth.error'da, UI otomatik güncellenecek
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              auth.error ?? 'Giriş başarısız',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                            duration: const Duration(
+                                              seconds: 4,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.grey[800],
@@ -137,8 +199,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Image.network(
                                     'https://www.google.com/favicon.ico',
                                     height: 24,
-                                    errorBuilder: (_, __, ___) => 
-                                        const Icon(Icons.g_mobiledata, size: 24),
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.g_mobiledata,
+                                      size: 24,
+                                    ),
                                   ),
                                   const SizedBox(width: 12),
                                   const Text(
@@ -152,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            
+
                             // Ayırıcı
                             Row(
                               children: [
@@ -163,7 +227,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                   child: Text(
                                     'veya',
                                     style: TextStyle(
@@ -180,11 +246,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               ],
                             ),
                             const SizedBox(height: 20),
-                            
+
                             // E-posta ile giriş butonu
                             OutlinedButton.icon(
-                              onPressed: () => setState(() => _showEmailLogin = true),
-                              icon: const Icon(Icons.email, color: Colors.white),
+                              onPressed: () =>
+                                  setState(() => _showEmailLogin = true),
+                              icon: const Icon(
+                                Icons.email,
+                                color: Colors.white,
+                              ),
                               label: const Text(
                                 'E-posta ile Giriş',
                                 style: TextStyle(color: Colors.white),
@@ -201,7 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ],
-                          
+
                           // E-posta Giriş Formu
                           if (_showEmailLogin) ...[
                             Form(
@@ -212,13 +282,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Align(
                                     alignment: Alignment.centerLeft,
                                     child: TextButton.icon(
-                                      onPressed: () => setState(() => _showEmailLogin = false),
-                                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-                                      label: const Text('Geri', style: TextStyle(color: Colors.white)),
+                                      onPressed: () => setState(
+                                        () => _showEmailLogin = false,
+                                      ),
+                                      icon: const Icon(
+                                        Icons.arrow_back,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                      label: const Text(
+                                        'Geri',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  
+
                                   // E-posta alanı
                                   TextFormField(
                                     controller: _emailController,
@@ -226,23 +305,38 @@ class _LoginScreenState extends State<LoginScreen> {
                                     style: const TextStyle(color: Colors.white),
                                     decoration: InputDecoration(
                                       labelText: 'E-posta',
-                                      labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
-                                      prefixIcon: const Icon(Icons.email, color: Colors.white70),
+                                      labelStyle: TextStyle(
+                                        color: Colors.white.withOpacity(0.8),
+                                      ),
+                                      prefixIcon: const Icon(
+                                        Icons.email,
+                                        color: Colors.white70,
+                                      ),
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                                        borderSide: BorderSide(
+                                          color: Colors.white.withOpacity(0.5),
+                                        ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(color: Colors.white, width: 2),
+                                        borderSide: const BorderSide(
+                                          color: Colors.white,
+                                          width: 2,
+                                        ),
                                       ),
                                       errorBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(color: Colors.redAccent),
+                                        borderSide: const BorderSide(
+                                          color: Colors.redAccent,
+                                        ),
                                       ),
                                       focusedErrorBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+                                        borderSide: const BorderSide(
+                                          color: Colors.redAccent,
+                                          width: 2,
+                                        ),
                                       ),
                                       filled: true,
                                       fillColor: Colors.white.withOpacity(0.1),
@@ -255,7 +349,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     },
                                   ),
                                   const SizedBox(height: 16),
-                                  
+
                                   // Şifre alanı
                                   TextFormField(
                                     controller: _passwordController,
@@ -263,30 +357,50 @@ class _LoginScreenState extends State<LoginScreen> {
                                     style: const TextStyle(color: Colors.white),
                                     decoration: InputDecoration(
                                       labelText: 'Şifre',
-                                      labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
-                                      prefixIcon: const Icon(Icons.lock, color: Colors.white70),
+                                      labelStyle: TextStyle(
+                                        color: Colors.white.withOpacity(0.8),
+                                      ),
+                                      prefixIcon: const Icon(
+                                        Icons.lock,
+                                        color: Colors.white70,
+                                      ),
                                       suffixIcon: IconButton(
                                         icon: Icon(
-                                          _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                                          _obscurePassword
+                                              ? Icons.visibility
+                                              : Icons.visibility_off,
                                           color: Colors.white70,
                                         ),
-                                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                        onPressed: () => setState(
+                                          () => _obscurePassword =
+                                              !_obscurePassword,
+                                        ),
                                       ),
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+                                        borderSide: BorderSide(
+                                          color: Colors.white.withOpacity(0.5),
+                                        ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(color: Colors.white, width: 2),
+                                        borderSide: const BorderSide(
+                                          color: Colors.white,
+                                          width: 2,
+                                        ),
                                       ),
                                       errorBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(color: Colors.redAccent),
+                                        borderSide: const BorderSide(
+                                          color: Colors.redAccent,
+                                        ),
                                       ),
                                       focusedErrorBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+                                        borderSide: const BorderSide(
+                                          color: Colors.redAccent,
+                                          width: 2,
+                                        ),
                                       ),
                                       filled: true,
                                       fillColor: Colors.white.withOpacity(0.1),
@@ -299,7 +413,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     },
                                   ),
                                   const SizedBox(height: 24),
-                                  
+
                                   // Giriş butonu
                                   SizedBox(
                                     width: double.infinity,
@@ -307,10 +421,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                       onPressed: _signInWithEmail,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.white,
-                                        foregroundColor: const Color(0xFF667eea),
-                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        foregroundColor: const Color(
+                                          0xFF667eea,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(30),
+                                          borderRadius: BorderRadius.circular(
+                                            30,
+                                          ),
                                         ),
                                       ),
                                       child: const Text(
@@ -326,7 +446,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ],
-                          
+
                           // Hata mesajı
                           if (auth.error != null) ...[
                             const SizedBox(height: 16),
@@ -343,12 +463,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ],
-                          
+
                           const SizedBox(height: 24),
-                          
+
                           // Kayıt ol linki
                           TextButton(
-                            onPressed: () => Navigator.pushNamed(context, '/register'),
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/register'),
                             child: Text(
                               'Hesabınız yok mu? Kayıt olun',
                               style: TextStyle(

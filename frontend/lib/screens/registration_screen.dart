@@ -19,7 +19,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   File? _profilePhoto;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -42,7 +42,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       maxHeight: 512,
       imageQuality: 80,
     );
-    
+
     if (pickedFile != null) {
       setState(() {
         _profilePhoto = File(pickedFile.path);
@@ -52,7 +52,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     // Profil fotoğrafı zorunlu
     if (_profilePhoto == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -63,8 +63,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       );
       return;
     }
-    
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    print('🚀 Kayıt formu gönderiliyor...');
+
     final success = await auth.registerWithEmail(
       email: _emailController.text.trim(),
       password: _passwordController.text,
@@ -72,9 +75,33 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       lastName: _lastNameController.text.trim(),
       profilePhoto: _profilePhoto,
     );
-    
-    if (success && mounted) {
+
+    if (!mounted) return;
+
+    if (success) {
+      // Başarılı - email doğrulama ekranına yönlendir
+      print('✅ Kayıt başarılı, email doğrulama ekranına yönlendiriliyor...');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kayıt başarılı! E-posta adresinizi kontrol edin.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
       Navigator.pushReplacementNamed(context, '/verify-email');
+    } else {
+      // Hata - kullanıcıya göster
+      print('❌ Kayıt başarısız: ${auth.error}');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.error ?? 'Kayıt başarısız'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
     }
   }
 
@@ -86,10 +113,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF667eea),
-              Color(0xFF764ba2),
-            ],
+            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
           ),
         ),
         child: SafeArea(
@@ -109,7 +133,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Başlık
                   const Text(
                     'Hesap Oluştur',
@@ -130,7 +154,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Profil Fotoğrafı
                   Center(
                     child: GestureDetector(
@@ -173,7 +197,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Form Alanları
                   _buildTextField(
                     controller: _firstNameController,
@@ -187,7 +211,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   _buildTextField(
                     controller: _lastNameController,
                     label: 'Soyad',
@@ -200,7 +224,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   _buildTextField(
                     controller: _emailController,
                     label: 'E-posta',
@@ -210,14 +234,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       if (value == null || value.isEmpty) {
                         return 'E-posta gerekli';
                       }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      if (!RegExp(
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(value)) {
                         return 'Geçerli bir e-posta adresi girin';
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   _buildTextField(
                     controller: _passwordController,
                     label: 'Şifre',
@@ -225,10 +251,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     obscureText: _obscurePassword,
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                         color: Colors.white70,
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -241,7 +270,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   _buildTextField(
                     controller: _confirmPasswordController,
                     label: 'Şifre Tekrarı',
@@ -249,10 +278,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     obscureText: _obscureConfirmPassword,
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                        _obscureConfirmPassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                         color: Colors.white70,
                       ),
-                      onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                      onPressed: () => setState(
+                        () =>
+                            _obscureConfirmPassword = !_obscureConfirmPassword,
+                      ),
                     ),
                     validator: (value) {
                       if (value != _passwordController.text) {
@@ -262,7 +296,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     },
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Hata Mesajı
                   Consumer<AuthProvider>(
                     builder: (context, auth, _) {
@@ -284,7 +318,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       return const SizedBox.shrink();
                     },
                   ),
-                  
+
                   // Kayıt Butonu
                   Consumer<AuthProvider>(
                     builder: (context, auth, _) {
@@ -302,7 +336,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Text(
                                 'Kayıt Ol',
@@ -315,7 +351,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Giriş Yap Linki
                   TextButton(
                     onPressed: () => Navigator.pop(context),

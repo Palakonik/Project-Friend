@@ -18,8 +18,8 @@ class User {
     this.isAdminUser = false,
   });
 
-  String get fullName => '$firstName $lastName'.trim().isNotEmpty 
-      ? '$firstName $lastName'.trim() 
+  String get fullName => '$firstName $lastName'.trim().isNotEmpty
+      ? '$firstName $lastName'.trim()
       : username;
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -33,6 +33,68 @@ class User {
       isAdminUser: json['is_admin_user'] ?? false,
     );
   }
+}
+
+/// Mesaj modeli
+class Message {
+  final String id;
+  final String senderId;
+  final String receiverId;
+  final String content;
+  final bool isRead;
+  final DateTime createdAt;
+  final DateTime? readAt;
+
+  Message({
+    required this.id,
+    required this.senderId,
+    required this.receiverId,
+    required this.content,
+    required this.isRead,
+    required this.createdAt,
+    this.readAt,
+  });
+
+  factory Message.fromJson(Map<String, dynamic> json) {
+    return Message(
+      id: json['id'],
+      senderId: json['sender_id'],
+      receiverId: json['receiver_id'],
+      content: json['content'] ?? '',
+      isRead: json['is_read'] ?? false,
+      createdAt: DateTime.parse(json['created_at']),
+      readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'sender_id': senderId,
+      'receiver_id': receiverId,
+      'content': content,
+      'is_read': isRead,
+      'created_at': createdAt.toIso8601String(),
+      'read_at': readAt?.toIso8601String(),
+    };
+  }
+}
+
+/// Konuşma modeli (son mesaj ile birlikte)
+class Conversation {
+  final String otherUserId;
+  final String otherUsername;
+  final String? otherAvatarUrl;
+  final Message lastMessage;
+  final int unreadCount;
+
+  Conversation({
+    required this.otherUserId,
+    required this.otherUsername,
+    this.otherAvatarUrl,
+    required this.lastMessage,
+    this.unreadCount = 0,
+  });
 }
 
 /// Arkadaşlık isteği modeli
@@ -74,11 +136,7 @@ class Friendship {
   final User friend;
   final DateTime createdAt;
 
-  Friendship({
-    required this.id,
-    required this.friend,
-    required this.createdAt,
-  });
+  Friendship({required this.id, required this.friend, required this.createdAt});
 
   factory Friendship.fromJson(Map<String, dynamic> json) {
     return Friendship(

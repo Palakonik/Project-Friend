@@ -1,21 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'services/auth_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/search_screen.dart';
+import 'screens/conversations_screen.dart';
 import 'screens/admin_panel_screen.dart';
 import 'screens/blocked_users_screen.dart';
 import 'screens/registration_screen.dart';
 import 'screens/email_verification_screen.dart';
+import 'screens/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase initialization
   await Firebase.initializeApp();
+
+  // Supabase initialization
+  // TODO: Supabase projenizi oluşturduktan sonra bu bilgileri güncelleyin
+  await Supabase.initialize(
+    url: 'https://bmcbzkkewskuibojxvud.supabase.co',
+    anonKey: 'sb_publishable_Ml7r3_OXOW2Tk_yOwm3TBQ_CUU1MTat',
+  );
+
   runApp(const MyApp());
 }
+
+// Global Supabase client (kolay erişim için)
+final supabase = Supabase.instance.client;
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -35,10 +51,7 @@ class MyApp extends StatelessWidget {
           ),
           useMaterial3: true,
           fontFamily: 'Roboto',
-          appBarTheme: const AppBarTheme(
-            centerTitle: true,
-            elevation: 0,
-          ),
+          appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
           cardTheme: CardThemeData(
             elevation: 2,
             shape: RoundedRectangleBorder(
@@ -48,10 +61,7 @@ class MyApp extends StatelessWidget {
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
               elevation: 2,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -61,11 +71,13 @@ class MyApp extends StatelessWidget {
         home: const AuthWrapper(),
         routes: {
           '/login': (context) => const LoginScreen(),
+          '/register': (context) => const RegistrationScreen(),
           '/home': (context) => const HomeScreen(),
           '/search': (context) => const SearchScreen(),
+          '/conversations': (context) => const ConversationsScreen(),
+          '/settings': (context) => const SettingsScreen(),
           '/admin': (context) => const AdminPanelScreen(),
           '/blocked': (context) => const BlockedUsersScreen(),
-          '/register': (context) => const RegistrationScreen(),
           '/verify-email': (context) => const EmailVerificationScreen(),
         },
       ),

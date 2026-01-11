@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/auth_provider.dart';
-import '../models/models.dart';
+import '../services/supabase_service.dart';
+import 'chat_screen.dart';
 
-/// Ana Sayfa - Arkadaş listesi ve navigasyon
+/// Ana Sayfa - Kullanıcı listesi (sohbet için)
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -13,26 +14,55 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<Friendship> _friends = [];
+  final SupabaseService _supabaseService = SupabaseService();
+  List<Map<String, dynamic>> _users = [];
   bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadFriends();
+    _loadUsers();
   }
 
-  Future<void> _loadFriends() async {
-    setState(() => _isLoading = true);
-    
+  Future<void> _loadUsers() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    try {
-      _friends = await auth.apiService.getMyFriends();
-    } catch (e) {
-      // Handle error
+    final currentUserId = auth.firebaseUser?.uid;
+
+    if (currentUserId == null) {
+      setState(() {
+        _error = 'Giriş yapmalısınız';
+        _isLoading = false;
+      });
+      return;
     }
-    
-    setState(() => _isLoading = false);
+
+    try {
+      // Tüm kullanıcıları getir
+      final response = await _supabaseService.client
+          .from('users')
+          .select()
+          .neq('id', currentUserId) // Kendisi hariç
+          .order('created_at', ascending: false);
+
+      setState(() {
+        _users = List<Map<String, dynamic>>.from(response);
+        _isLoading = false;
+      });
+
+      print('✅ ${_users.length} kullanıcı yüklendi');
+    } catch (e) {
+      setState(() {
+        _error = 'Kullanıcılar yüklenemedi: $e';
+        _isLoading = false;
+      });
+      print('❌ Kullanıcı yükleme hatası: $e');
+    }
   }
 
   @override
@@ -42,30 +72,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Arkadaşlarım'),
+        title: const Text('Mesajlar'),
         backgroundColor: const Color(0xFF667eea),
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          // Admin butonu
-          if (auth.isAdmin)
-            IconButton(
-              icon: const Icon(Icons.admin_panel_settings),
-              onPressed: () async {
-                await Navigator.pushNamed(context, '/admin');
-                _loadFriends(); // Admin panelinden dönünce listeyi yenile
-              },
-              tooltip: 'Admin Paneli',
-            ),
-          // Engellenmiş kullanıcılar
-          IconButton(
-            icon: const Icon(Icons.block),
-            onPressed: () async {
-              await Navigator.pushNamed(context, '/blocked');
-              _loadFriends(); // Engel ekranından dönünce listeyi yenile
-            },
-            tooltip: 'Engellenmiş Kullanıcılar',
-          ),
           // Profil menüsü
           PopupMenuButton<String>(
             icon: CircleAvatar(
@@ -98,10 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     Text(
                       user?.email ?? '',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -121,161 +129,152 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadFriends,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _friends.isEmpty
-                ? _buildEmptyState()
-                : _buildFriendsList(),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await Navigator.pushNamed(context, '/search');
-          _loadFriends(); // Geri dönünce listeyi yenile
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+            const SizedBox(height: 16),
+            Text(
+              _error!,
+              style: const TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _loadUsers,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tekrar Dene'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_users.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.people_outline, size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Henüz kullanıcı yok',
+              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'İlk kullanıcı sensin!',
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadUsers,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: _users.length,
+        itemBuilder: (context, index) {
+          final otherUser = _users[index];
+          return _buildUserTile(otherUser);
         },
-        backgroundColor: const Color(0xFF667eea),
-        icon: const Icon(Icons.person_add),
-        label: const Text('Arkadaş Ekle'),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.people_outline,
-            size: 80,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Henüz arkadaşınız yok',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Yeni arkadaşlar eklemek için + butonuna tıklayın',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildUserTile(Map<String, dynamic> otherUser) {
+    final username = otherUser['username'] ?? 'Kullanıcı';
+    final email = otherUser['email'] ?? '';
+    final avatarUrl = otherUser['avatar_url'];
+    final bio = otherUser['bio'] ?? '';
 
-  Widget _buildFriendsList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _friends.length,
-      itemBuilder: (context, index) {
-        final friendship = _friends[index];
-        final friend = friendship.friend;
-        
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(12),
-            leading: CircleAvatar(
-              radius: 28,
-              backgroundImage: friend.profilePhoto != null
-                  ? CachedNetworkImageProvider(friend.profilePhoto!)
-                  : null,
-              child: friend.profilePhoto == null
-                  ? Text(
-                      friend.fullName.isNotEmpty 
-                          ? friend.fullName[0].toUpperCase() 
-                          : '?',
-                      style: const TextStyle(fontSize: 20),
-                    )
-                  : null,
-            ),
-            title: Text(
-              friend.fullName,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            subtitle: Text(
-              'Arkadaş oldu: ${_formatDate(friendship.createdAt)}',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
-            trailing: PopupMenuButton<String>(
-              onSelected: (value) async {
-                if (value == 'block') {
-                  await _blockFriend(friend);
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'block',
-                  child: Row(
-                    children: [
-                      Icon(Icons.block, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Engelle'),
-                    ],
-                  ),
-                ),
-              ],
+    return InkWell(
+      onTap: () {
+        // Chat ekranına git
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              friendId: otherUser['id'],
+              friendName: username,
+              friendAvatar: avatarUrl,
             ),
           ),
         );
       },
-    );
-  }
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+        ),
+        child: Row(
+          children: [
+            // Avatar
+            CircleAvatar(
+              radius: 28,
+              backgroundImage: avatarUrl != null
+                  ? CachedNetworkImageProvider(avatarUrl)
+                  : null,
+              child: avatarUrl == null
+                  ? Text(
+                      username.isNotEmpty ? username[0].toUpperCase() : '?',
+                      style: const TextStyle(fontSize: 20),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
 
-  Future<void> _blockFriend(User friend) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Kullanıcıyı Engelle'),
-        content: Text('${friend.fullName} engellenecek. Devam etmek istiyor musunuz?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('İptal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Engelle'),
-          ),
-        ],
+            // Kullanıcı bilgileri
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    username,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  if (bio.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      bio,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // Mesaj ikonu
+            Icon(Icons.chat_bubble_outline, color: Colors.grey[400]),
+          ],
+        ),
       ),
     );
-
-    if (confirm == true) {
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      final success = await auth.apiService.blockUser(friend.id);
-      if (success) {
-        _loadFriends();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${friend.fullName} engellendi')),
-          );
-        }
-      }
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}.${date.month}.${date.year}';
   }
 }
