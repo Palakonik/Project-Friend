@@ -47,6 +47,14 @@ class _HomeScreenState extends State<HomeScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          // APIs butonu
+          IconButton(
+            icon: const Icon(Icons.api),
+            onPressed: () {
+              Navigator.pushNamed(context, '/apis');
+            },
+            tooltip: 'API Örnekleri',
+          ),
           // Admin butonu
           if (auth.isAdmin)
             IconButton(

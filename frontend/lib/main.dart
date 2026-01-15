@@ -10,6 +10,7 @@ import 'screens/admin_panel_screen.dart';
 import 'screens/blocked_users_screen.dart';
 import 'screens/registration_screen.dart';
 import 'screens/email_verification_screen.dart';
+import 'screens/apis_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,6 +68,7 @@ class MyApp extends StatelessWidget {
           '/blocked': (context) => const BlockedUsersScreen(),
           '/register': (context) => const RegistrationScreen(),
           '/verify-email': (context) => const EmailVerificationScreen(),
+          '/apis': (context) => const ApisScreen(),
         },
       ),
     );

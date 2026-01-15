@@ -1,0 +1,32 @@
+1. OpenWeatherMap API
+OpenWeatherMap API, hava durumu verilerini sağlayan popüler bir API'dir. Özellikle hava durumu uygulamaları, seyahat rehberleri ve dış mekan etkinliklerini planlama gibi projeler için idealdir. Örneğin, bir seyahat uygulaması geliştiriyorsanız, kullanıcıların gidecekleri destinasyonun hava durumunu anında gösterebilir ve seyahat planlarını optimize etmelerine yardımcı olabilirsiniz.
+
+2. Unsplash API
+Unsplash API, yüksek çözünürlüklü ve telifsiz fotoğraflar sunan bir API'dir. Geliştiriciler, projelerinde görsel içerik zenginliği katmak için bu API'yi kullanabilirler. Bloglar, haber siteleri, sosyal medya uygulamaları ve daha birçok proje için mükemmel bir kaynaktır. Örneğin, bir blog platformu geliştiriyorsanız, kullanıcıların yazılarına yüksek kaliteli görseller eklemelerini sağlayabilir ve görsel çekiciliği artırabilirsiniz. Unsplash API'nin geniş fotoğraf veritabanı, her türlü konu ve tema için uygun görseller bulmanıza olanak tanır.
+
+3. NewsAPI
+NewsAPI, dünya genelindeki haber kaynaklarından en güncel haberleri sunan bir API'dir. Kullanıcılar, belirli anahtar kelimelerle ilgili haberleri arayabilir ve en son haberlere kolayca erişebilirler. Haber siteleri, bloglar ve bilgi uygulamaları için oldukça kullanışlıdır. Ücretsiz plan, belirli bir sayıda günlük istekle sınırlıdır, ancak küçük ve orta ölçekli projeler için yeterlidir.
+
+4. CoinGecko API
+CoinGecko API, kripto para piyasalarındaki güncel verileri sağlayan bir API'dir. Fiyatlar, piyasa değeri, ticaret hacmi ve daha birçok bilgi sunar. Kripto para uygulamaları, yatırım platformları ve finansal analiz araçları için idealdir. Örneğin, bir kripto para portföy takip uygulaması geliştiriyorsanız, kullanıcıların portföylerindeki kripto paraların güncel değerlerini anında gösterebilir ve piyasa trendlerini analiz etmelerini sağlayabilirsiniz.
+
+5. OpenAI API
+OpenAI API, doğal dil işleme ve metin üretme konularında devrim yaratan bir API'dir. Geliştiriciler, sohbet botları, içerik oluşturma araçları ve dil işleme projelerinde bu API'den faydalanabilirler. Müşteri hizmetleri, içerik yönetimi ve otomatik yazılım çözümleri için oldukça kullanışlıdır. Örneğin, bir müşteri hizmetleri botu geliştiriyorsanız, GPT-3 API'yi kullanarak doğal ve etkili yanıtlar üretebilir ve müşteri memnuniyetini artırabilirsiniz.
+
+6. Mapbox API
+Mapbox API, haritalar ve coğrafi verilerle ilgili projeler için güçlü bir API'dir. Geliştiriciler, özelleştirilebilir haritalar, yer belirleme ve rota hesaplama gibi özellikler ekleyebilirler. Navigasyon uygulamaları, coğrafi bilgi sistemleri ve yer tabanlı hizmetler için idealdir. Bir teslimat takip uygulaması geliştiriyorsanız, Mapbox API ile canlı haritalar oluşturabilir ve teslimatların gerçek zamanlı olarak izlenmesini sağlayabilirsiniz. API'nin esnek ve özelleştirilebilir yapısı, her türlü harita tabanlı projeye uyum sağlar.
+
+7. REST Countries API
+REST Countries API, dünya genelindeki ülkeler hakkında bilgi sağlayan bir API'dir. Ülkelerin nüfusu, başkenti, resmi dilleri, para birimi ve daha birçok bilgiye erişim imkanı sunar. Coğrafi bilgi uygulamaları, seyahat rehberleri ve eğitim platformları için kullanışlıdır. Örneğin, bir coğrafya eğitim uygulaması geliştiriyorsanız, REST Countries API ile öğrencilerin ülkeler hakkında detaylı bilgilere kolayca erişmesini sağlayabilirsiniz.
+
+8. Hugging Face API 
+Hugging Face API, yapay zeka ve doğal dil işleme (NLP) alanında geliştiricilere geniş bir model koleksiyonu sunan güçlü bir platformdur. Bu API, metin özetleme, duygu analizi, konuşma tanıma ve chatbot geliştirme gibi birçok alanda kullanılabilir. Açık kaynaklı Transformer modelleriyle tanınan Hugging Face, kullanıcıların en yeni makine öğrenimi modellerini kolayca entegre etmelerine olanak tanır. API sayesinde, metin tabanlı işlemleri otomatikleştirmek, büyük veri analizleri yapmak ve akıllı sohbet botları oluşturmak mümkün hale gelir. Hem bireysel geliştiriciler hem de büyük ölçekli şirketler için esnek çözümler sunan Hugging Face API, yapay zeka projelerini hızlandırmak için ideal bir araçtır.
+
+9. Finnhub API 
+Finnhub API, yatırımcılar ve geliştiriciler için gerçek zamanlı finansal veriler sunan güçlü bir API’dir. Hisse senetleri, döviz kurları (forex), kripto para piyasaları ve ekonomik göstergeler hakkında canlı ve geçmiş verileri sağlamak için tasarlanmıştır. Bu API, finansal analiz uygulamalarında, yatırım stratejilerinde ve piyasa takibi yapan platformlarda yaygın olarak kullanılır. Finnhub, piyasa haberleri, şirket kazanç raporları, algoritmik ticaret verileri ve duyarlılık analizi gibi gelişmiş finansal veri hizmetleri sunarak yatırım kararlarını daha bilinçli hale getirmeye yardımcı olur. Gerçek zamanlı güncellemeleri ve geniş veri kapsamı sayesinde, hem bireysel yatırımcılar hem de kurumsal finans kuruluşları için güvenilir ve kapsamlı bir finans API’sidir.
+
+10. ExchangeRate-API 
+ExchangeRate-API, 200’den fazla para birimi için güncel döviz kuru verileri sağlayan güvenilir bir API’dir. Küresel finans piyasalarından anlık döviz kuru bilgilerini çekerek, e-ticaret platformları, finansal uygulamalar ve döviz çeviri araçları için güçlü bir altyapı sunar. Kullanıcılar, farklı para birimleri arasındaki dönüşümleri otomatikleştirebilir ve API’nin hızlı yanıt süresi sayesinde anlık fiyat değişimlerine anında erişebilir. Basit entegrasyon yapısı ve geniş kapsamlı veri desteği sayesinde, küçük ölçekli işletmelerden büyük finansal kuruluşlara kadar geniş bir kullanım alanına sahiptir. Döviz kuru bazlı işlemleri kolaylaştırmak ve global finansal işlemleri yönetmek isteyenler için ideal bir çözüm sunar.
+
+11. DeepAI API
+DeepAI API, görüntü oluşturma, metin analizi ve metin üretimi gibi çeşitli yapay zeka özellikleri sunan kapsamlı bir AI platformudur. Kullanıcılar, bu API sayesinde metin özetleme, otomatik içerik üretimi ve yapay zeka destekli görsel oluşturma gibi işlemleri kolayca gerçekleştirebilir. Özellikle içerik üreticileri, geliştiriciler ve araştırmacılar için büyük bir avantaj sağlayan DeepAI API, farklı makine öğrenimi modellerine erişim sunarak yaratıcı ve veri odaklı projelerin geliştirilmesini hızlandırır. Kolay entegrasyon yapısı ve geniş kullanım alanı sayesinde, hem bireysel kullanıcılar hem de işletmeler için güçlü bir yapay zeka destekli çözüm sunar.

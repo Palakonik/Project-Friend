@@ -31,6 +31,5 @@ GoogleService-Info.plist
 
 # Ortam Değişkenleri ve Veritabanı
 .env
-db.sqlite3
 venv/
 __pycache__/
